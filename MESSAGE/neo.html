@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Happy 2nd Monthsary, Mayumi! 💖</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none; 
+        }
+
+        body {
+            background-color: #030206;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+
+        /* Custom Scrollbar for Message Box */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(255, 0, 102, 0.4);
+            border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 0, 102, 0.7);
+        }
+
+        /* 3D Envelope Styles & Animations */
+        .envelope-wrapper {
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .envelope {
+            position: relative;
+            width: 280px;
+            height: 190px;
+            background: #1a0b18;
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(255, 0, 102, 0.4), inset 0 0 15px rgba(255, 0, 102, 0.2);
+            border: 1px solid rgba(255, 0, 102, 0.5);
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+        }
+
+        @media (min-width: 640px) {
+            .envelope {
+                width: 320px;
+                height: 210px;
+            }
+        }
+
+        .envelope:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 0 45px rgba(255, 0, 102, 0.7), inset 0 0 20px rgba(255, 0, 102, 0.4);
+        }
+
+        .envelope-flap {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 0;
+            border-left: 140px solid transparent;
+            border-right: 140px solid transparent;
+            border-top: 110px solid #2a1027;
+            transform-origin: top;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 3;
+            filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+        }
+
+        @media (min-width: 640px) {
+            .envelope-flap {
+                border-left-width: 160px;
+                border-right-width: 160px;
+                border-top-width: 120px;
+            }
+        }
+
+        .envelope.open .envelope-flap {
+            transform: rotateX(180deg);
+            z-index: 1;
+        }
+
+        .envelope-pocket {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 0;
+            border-left: 140px solid #140813;
+            border-right: 140px solid #140813;
+            border-bottom: 110px solid #230b20;
+            border-radius: 0 0 12px 12px;
+            z-index: 2;
+        }
+
+        @media (min-width: 640px) {
+            .envelope-pocket {
+                border-left-width: 160px;
+                border-right-width: 160px;
+                border-bottom-width: 120px;
+            }
+        }
+
+        .envelope-seal {
+            position: absolute;
+            top: 90px;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, #ff0066, #ff0055);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(255, 0, 102, 0.8);
+            z-index: 4;
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+
+        @media (min-width: 640px) {
+            .envelope-seal {
+                top: 100px;
+            }
+        }
+
+        .envelope.open .envelope-seal {
+            opacity: 0;
+            transform: translate(-50%, -50%) scale(0.5);
+            pointer-events: none;
+        }
+
+        /* Message Card Animations */
+        .card-container {
+            transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .card-hidden {
+            opacity: 0;
+            transform: translateY(30px) scale(0.95);
+            pointer-events: none;
+        }
+
+        .card-visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: auto;
+        }
+
+        /* Pulse hint animation */
+        @keyframes tapPulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.08); opacity: 1; }
+        }
+
+        .tap-hint {
+            animation: tapPulse 1.8s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-black text-white relative flex flex-col items-center justify-center min-h-screen overflow-hidden">
+
+    <!-- Music File -->
+    <audio id="bgMusic" loop src="Music/BQ.mp3"></audio>
+
+    <!-- Canvas for Neon Heart Effect -->
+    <canvas id="neonCanvas" class="fixed inset-0 z-0 pointer-events-auto"></canvas>
+
+    <!-- Interactive Envelope UI Container -->
+    <div id="envelopeContainer" class="relative z-10 flex flex-col items-center justify-center transition-all duration-700">
+        <div class="envelope-wrapper" onclick="openEnvelope()">
+            <div id="envelope" class="envelope">
+                <div class="envelope-flap"></div>
+                <div class="envelope-pocket"></div>
+                <div class="envelope-seal">
+                    <i class="fa-solid fa-heart text-lg animate-pulse"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tap/Click Prompt -->
+        <div class="tap-hint mt-8 text-center bg-black/50 backdrop-blur-md px-5 py-2.5 rounded-full border border-pink-500/30 text-pink-300 text-sm font-medium shadow-[0_0_15px_rgba(255,0,102,0.3)]">
+            <i class="fa-solid fa-hand-pointer mr-2"></i> Pindutin ang envelope, my baby ✨
+        </div>
+    </div>
+
+    <!-- Message Card Overlay (Initially Hidden) -->
+    <div id="messageCard" class="card-container card-hidden fixed z-20 max-w-lg w-[90%] max-h-[82vh] p-6 md:p-8 rounded-2xl bg-black/60 backdrop-blur-md border border-pink-500/40 shadow-[0_0_35px_rgba(255,0,102,0.35)] flex flex-col items-center text-center">
+        <!-- Close Button to view background clearly -->
+        <button onclick="toggleCardVisibility()" class="absolute top-4 right-4 text-pink-300 hover:text-white bg-pink-950/40 hover:bg-pink-900/60 w-8 h-8 rounded-full flex items-center justify-center transition-colors border border-pink-500/30">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <div class="overflow-y-auto custom-scrollbar pr-2 space-y-4 text-pink-100 text-sm md:text-base leading-relaxed my-auto">
+            <h1 class="text-xl md:text-2xl font-bold text-pink-400 drop-shadow-[0_0_10px_rgba(255,0,102,0.8)] pt-2">
+                Happy 2nd Monthsary, my baby Mayumi! 💖
+            </h1>
+            
+            <p>
+                I know super busy ka lately, pero gusto lang talaga kitang i-greet at ipaalala sa’yo kung gaano ako kaswerte na ikaw ang kasama ko. Thank you so much for always being there to cheer me up and for making my days brighter. Alam kong hindi ako perfect, pero araw-araw kong sisikapin na maging better and iparamdam sa’yo kung gaano ka kahalaga sa akin.
+            </p>
+            
+            <p>
+                I’m so proud of you, always, baby. ❤️ Kahit minsan hindi ka nakakapag-update dahil sa sobrang dami mong ginagawa, naiintindihan ko naman lagi ’yon. I know you’re doing your best, and I’ll always be here to support you. Sorry din pala kung minsan makulit ako mag-chat sa’yo—na-miss lang talaga kita. 🥺
+            </p>
+            
+            <p>
+                Lagi mong tatandaan na nandito lang ako para suportahan ka at samahan ka sa lahat. Thank you for being you and for being part of my life.
+            </p>
+            
+            <p class="font-semibold text-pink-300 pt-2 pb-1 text-base md:text-lg drop-shadow-[0_0_6px_rgba(255,0,102,0.5)]">
+                Happy 2nd Monthsary ulit, my love! I love you so much! 🥰✨
+            </p>
+        </div>
+    </div>
+
+    <!-- Floating Audio Toggle Button (Shows after opening envelope) -->
+    <button id="audioToggle" onclick="toggleAudio()" class="hidden fixed bottom-5 right-5 z-30 bg-pink-950/70 hover:bg-pink-900/90 text-pink-200 w-11 h-11 rounded-full border border-pink-500/50 shadow-[0_0_15px_rgba(255,0,102,0.4)] flex items-center justify-center transition-all duration-300">
+        <i id="audioIcon" class="fa-solid fa-music"></i>
+    </button>
+
+    <script>
+        const bgMusic = document.getElementById('bgMusic');
+        const envelopeContainer = document.getElementById('envelopeContainer');
+        const envelope = document.getElementById('envelope');
+        const messageCard = document.getElementById('messageCard');
+        const audioToggle = document.getElementById('audioToggle');
+        const audioIcon = document.getElementById('audioIcon');
+        
+        let envelopeOpened = false;
+
+        // Function to handle opening the envelope
+        function openEnvelope() {
+            if (envelopeOpened) return;
+            envelopeOpened = true;
+
+            // Play background music
+            playAudio();
+
+            // Trigger Envelope opening animation
+            envelope.classList.add('open');
+
+            // Burst sparks effect on click
+            const rect = envelope.getBoundingClientRect();
+            createSpark(rect.left + rect.width / 2, rect.top + rect.height / 2, 40);
+
+            // Hide envelope container and reveal card
+            setTimeout(() => {
+                envelopeContainer.classList.add('opacity-0', 'scale-90', 'pointer-events-none');
+                
+                setTimeout(() => {
+                    envelopeContainer.classList.add('hidden');
+                    messageCard.classList.remove('card-hidden');
+                    messageCard.classList.add('card-visible');
+                    audioToggle.classList.remove('hidden');
+                }, 400);
+            }, 600);
+        }
+
+        // Play Audio with fallback
+        function playAudio() {
+            bgMusic.play().then(() => {
+                console.log("Audio playing successfully!");
+                audioIcon.className = "fa-solid fa-music text-pink-400 animate-bounce";
+            }).catch((err) => {
+                console.error("Audio playback error:", err);
+            });
+        }
+
+        // Toggle Audio state manually
+        function toggleAudio() {
+            if (bgMusic.paused) {
+                bgMusic.play();
+                audioIcon.className = "fa-solid fa-music text-pink-400 animate-bounce";
+            } else {
+                bgMusic.pause();
+                audioIcon.className = "fa-solid fa-volume-xmark text-gray-400";
+            }
+        }
+
+        // Toggle Card visibility to view background freely
+        function toggleCardVisibility() {
+            if (messageCard.classList.contains('card-visible')) {
+                messageCard.classList.remove('card-visible');
+                messageCard.classList.add('card-hidden');
+                // Create reopen button option
+                showReopenButton();
+            } else {
+                messageCard.classList.remove('card-hidden');
+                messageCard.classList.add('card-visible');
+                hideReopenButton();
+            }
+        }
+
+        function showReopenButton() {
+            if (!document.getElementById('reopenBtn')) {
+                const btn = document.createElement('button');
+                btn.id = 'reopenBtn';
+                btn.onclick = toggleCardVisibility;
+                btn.className = 'fixed bottom-5 left-5 z-30 bg-pink-950/70 hover:bg-pink-900/90 text-pink-200 px-4 py-2.5 rounded-full border border-pink-500/50 shadow-[0_0_15px_rgba(255,0,102,0.4)] flex items-center gap-2 text-sm transition-all duration-300';
+                btn.innerHTML = '<i class="fa-solid fa-envelope-open-text text-pink-400"></i> Basahin ulit';
+                document.body.appendChild(btn);
+            } else {
+                document.getElementById('reopenBtn').style.display = 'flex';
+            }
+        }
+
+        function hideReopenButton() {
+            const btn = document.getElementById('reopenBtn');
+            if (btn) btn.style.display = 'none';
+        }
+
+        const canvas = document.getElementById('neonCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let width = window.innerWidth;
+        let height = window.innerHeight;
+
+        function resize() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        const mouse = {
+            x: width / 2,
+            y: height / 2,
+            targetX: width / 2,
+            targetY: height / 2,
+            pressed: false
+        };
+
+        window.addEventListener('pointermove', (e) => {
+            mouse.targetX = e.clientX;
+            mouse.targetY = e.clientY;
+            if (Math.random() < 0.6) {
+                createSpark(e.clientX, e.clientY, 2);
+            }
+        });
+
+        window.addEventListener('pointerdown', (e) => {
+            mouse.pressed = true;
+            mouse.targetX = e.clientX;
+            mouse.targetY = e.clientY;
+            createSpark(e.clientX, e.clientY, 25);
+        });
+
+        window.addEventListener('pointerup', () => {
+            mouse.pressed = false;
+        });
+
+        function getHeartPoint(t, scale) {
+            const x = 16 * Math.pow(Math.sin(t), 3);
+            const y = -(13 * Math.cos(t) - 5 * Math.cos(2 * t) - 2 * Math.cos(3 * t) - Math.cos(4 * t));
+            return {
+                x: x * scale,
+                y: y * scale
+            };
+        }
+
+        const sparks = [];
+        const ambientParticles = [];
+
+        class Spark {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 5 + 1.5;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed - Math.random() * 1.5;
+                this.life = 1.0;
+                this.decay = Math.random() * 0.025 + 0.015;
+                this.size = Math.random() * 3.5 + 1.5;
+                this.hue = Math.random() < 0.85 ? 335 + Math.random() * 20 : 180 + Math.random() * 30;
+                this.isMiniHeart = Math.random() < 0.25;
+                this.rotation = Math.random() * Math.PI * 2;
+                this.rotSpeed = (Math.random() - 0.5) * 0.15;
+            }
+
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.06;
+                this.vx *= 0.98;
+                this.life -= this.decay;
+                this.rotation += this.rotSpeed;
+            }
+
+            draw(ctx) {
+                if (this.life <= 0) return;
+                ctx.save();
+                ctx.globalAlpha = Math.max(0, this.life);
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+
+                ctx.shadowBlur = 12;
+                ctx.shadowColor = `hsl(${this.hue}, 100%, 65%)`;
+                ctx.fillStyle = `hsl(${this.hue}, 100%, 70%)`;
+
+                if (this.isMiniHeart) {
+                    const s = this.size * 0.8;
+                    ctx.beginPath();
+                    ctx.moveTo(0, s / 4);
+                    ctx.quadraticCurveTo(0, 0, -s / 2, 0);
+                    ctx.quadraticCurveTo(-s, 0, -s, s / 2);
+                    ctx.quadraticCurveTo(-s, s, 0, s * 1.3);
+                    ctx.quadraticCurveTo(s, s, s, s / 2);
+                    ctx.quadraticCurveTo(s, 0, s / 2, 0);
+                    ctx.quadraticCurveTo(0, 0, 0, s / 4);
+                    ctx.fill();
+                } else {
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                ctx.restore();
+            }
+        }
+
+        function createSpark(x, y, count) {
+            for (let i = 0; i < count; i++) {
+                sparks.push(new Spark(x, y));
+            }
+        }
+
+        function initAmbientDust() {
+            for (let i = 0; i < 90; i++) {
+                ambientParticles.push({
+                    x: Math.random() * width,
+                    y: Math.random() * height,
+                    size: Math.random() * 2 + 0.5,
+                    speedY: -(Math.random() * 0.35 + 0.1),
+                    speedX: (Math.random() - 0.5) * 0.2,
+                    alpha: Math.random() * 0.6 + 0.2,
+                    pulse: Math.random() * Math.PI * 2,
+                    hue: Math.random() < 0.7 ? 335 : 190
+                });
+            }
+        }
+        initAmbientDust();
+
+        function updateAndDrawAmbient(ctx) {
+            ctx.save();
+            for (let p of ambientParticles) {
+                p.y += p.speedY;
+                p.x += p.speedX;
+                p.pulse += 0.025;
+
+                if (p.y < 0) p.y = height;
+                if (p.x < 0) p.x = width;
+                if (p.x > width) p.x = 0;
+
+                const currentAlpha = (Math.sin(p.pulse) * 0.35 + 0.65) * p.alpha;
+                ctx.fillStyle = `hsla(${p.hue}, 100%, 70%, ${currentAlpha})`;
+                ctx.shadowBlur = 8;
+                ctx.shadowColor = `hsl(${p.hue}, 100%, 60%)`;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+
+        let time = 0;
+
+        function drawNeonHeart(time) {
+            ctx.save();
+
+            mouse.x += (mouse.targetX - mouse.x) * 0.05;
+            mouse.y += (mouse.targetY - mouse.y) * 0.05;
+
+            const offsetX = (mouse.x - width / 2) * 0.06;
+            const offsetY = (mouse.y - height / 2) * 0.06;
+
+            const centerX = width / 2 + offsetX;
+            const centerY = height / 2 + offsetY + 20;
+
+            ctx.translate(centerX, centerY);
+
+            // Responsive Heart Scale
+            const baseScale = Math.min(width, height) * 0.021;
+
+            const beatCycle = (time * 2.6) % (Math.PI * 2);
+            let heartbeatScale = 1.0;
+            if (beatCycle < 0.5) {
+                heartbeatScale += Math.sin(beatCycle * (Math.PI / 0.5)) * 0.16;
+            } else if (beatCycle > 0.7 && beatCycle < 1.1) {
+                heartbeatScale += Math.sin((beatCycle - 0.7) * (Math.PI / 0.4)) * 0.08;
+            }
+
+            if (mouse.pressed) {
+                heartbeatScale *= 0.92;
+            }
+
+            const currentScale = baseScale * heartbeatScale;
+
+            let flickerAlpha = 1.0;
+            if (Math.random() < 0.05) {
+                flickerAlpha = 0.75 + Math.random() * 0.25;
+            }
+
+            const points = [];
+            const steps = 150;
+            for (let i = 0; i < steps; i++) {
+                const t = (i / steps) * Math.PI * 2;
+                points.push(getHeartPoint(t, currentScale));
+            }
+
+            function tracePath() {
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) {
+                    ctx.lineTo(points[i].x, points[i].y);
+                }
+                ctx.closePath();
+            }
+
+            ctx.shadowColor = '#ff0055';
+            ctx.shadowBlur = 70;
+            ctx.strokeStyle = `rgba(255, 0, 85, ${0.35 * flickerAlpha})`;
+            ctx.lineWidth = 18;
+            tracePath();
+            ctx.stroke();
+
+            ctx.shadowColor = '#ff0066';
+            ctx.shadowBlur = 35;
+            ctx.strokeStyle = `rgba(255, 0, 102, ${0.85 * flickerAlpha})`;
+            ctx.lineWidth = 7;
+            tracePath();
+            ctx.stroke();
+
+            ctx.shadowColor = '#ffffff';
+            ctx.shadowBlur = 12;
+            ctx.strokeStyle = `rgba(255, 255, 255, ${0.95 * flickerAlpha})`;
+            ctx.lineWidth = 3;
+            tracePath();
+            ctx.stroke();
+
+            ctx.fillStyle = `rgba(255, 0, 85, ${0.06 * flickerAlpha})`;
+            tracePath();
+            ctx.fill();
+
+            if (Math.random() < 0.7) {
+                const sparkIndex = Math.floor(Math.random() * points.length);
+                const sparkPt = points[sparkIndex];
+                ctx.shadowColor = '#00ffff';
+                ctx.shadowBlur = 15;
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(sparkPt.x, sparkPt.y, 2 + Math.random() * 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            ctx.restore();
+        }
+
+        let lastTime = performance.now();
+
+        function animate(now) {
+            const dt = (now - lastTime) / 1000;
+            lastTime = now;
+            time += dt;
+
+            ctx.fillStyle = 'rgba(3, 2, 6, 0.25)';
+            ctx.fillRect(0, 0, width, height);
+
+            updateAndDrawAmbient(ctx);
+            drawNeonHeart(time);
+
+            for (let i = sparks.length - 1; i >= 0; i--) {
+                const sp = sparks[i];
+                sp.update();
+                sp.draw(ctx);
+                if (sp.life <= 0) {
+                    sparks.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(animate);
+        }
+
+        window.onload = function() {
+            requestAnimationFrame(animate);
+        };
+    </script>
+</body>
+</html>
