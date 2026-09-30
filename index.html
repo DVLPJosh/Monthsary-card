@@ -185,8 +185,8 @@
 </head>
 <body class="bg-black text-white relative flex flex-col items-center justify-center min-h-screen overflow-hidden">
 
-    <!-- Music File -->
-    <audio id="bgMusic" loop src="MESSAGE/Music/BQ.mp3"></audio>
+    <!-- Music File (Path Corrected & Preload added) -->
+    <audio id="bgMusic" loop preload="auto" src="MESSAGE/Music/BQ.mp3"></audio>
 
     <!-- Canvas for Neon Heart Effect -->
     <canvas id="neonCanvas" class="fixed inset-0 z-0 pointer-events-auto"></canvas>
@@ -226,7 +226,7 @@
             </p>
             
             <p>
-                I’m so proud of you, always, baby. ❤️ Kahit minsan hindi ka nakakapag-update dahil sa sobrang dami mong ginagawa, naiintindihan ko naman lagi ’yon. I know you’re doing your best, and I’ll always be here to support you. Sorry din pala kung minsan makulit ako mag-chat sa’yo—na-miss lang talaga kita. 🥺
+                I’m so proud of you, always, baby. ❤️️ Kahit minsan hindi ka nakakapag-update dahil sa sobrang dami mong ginagawa, naiintindihan ko naman lagi ’yon. I know you’re doing your best, and I’ll always be here to support you. Sorry din pala kung minsan makulit ako mag-chat sa’yo—na-miss lang talaga kita. 🥺
             </p>
             
             <p>
@@ -259,7 +259,7 @@
             if (envelopeOpened) return;
             envelopeOpened = true;
 
-            // Play background music
+            // Direct user-gesture play for reliability across browsers
             playAudio();
 
             // Trigger Envelope opening animation
@@ -282,14 +282,18 @@
             }, 600);
         }
 
-        // Play Audio with fallback
+        // Play Audio with reliable Promise handling
         function playAudio() {
-            bgMusic.play().then(() => {
-                console.log("Audio playing successfully!");
-                audioIcon.className = "fa-solid fa-music text-pink-400 animate-bounce";
-            }).catch((err) => {
-                console.error("Audio playback error:", err);
-            });
+            bgMusic.muted = false;
+            const playPromise = bgMusic.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    console.log("Audio playing successfully!");
+                    audioIcon.className = "fa-solid fa-music text-pink-400 animate-bounce";
+                }).catch((err) => {
+                    console.error("Audio playback error:", err);
+                });
+            }
         }
 
         // Toggle Audio state manually
@@ -308,7 +312,6 @@
             if (messageCard.classList.contains('card-visible')) {
                 messageCard.classList.remove('card-visible');
                 messageCard.classList.add('card-hidden');
-                // Create reopen button option
                 showReopenButton();
             } else {
                 messageCard.classList.remove('card-hidden');
@@ -335,6 +338,7 @@
             if (btn) btn.style.display = 'none';
         }
 
+        /* Canvas Neon Heart Effect */
         const canvas = document.getElementById('neonCanvas');
         const ctx = canvas.getContext('2d');
 
@@ -507,7 +511,6 @@
 
             ctx.translate(centerX, centerY);
 
-            // Responsive Heart Scale
             const baseScale = Math.min(width, height) * 0.021;
 
             const beatCycle = (time * 2.6) % (Math.PI * 2);
